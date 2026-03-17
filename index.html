@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <title>Super AI Chess</title>
 
+<!-- jQuery (required) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Chessboard CSS -->
 <link rel="stylesheet"
 href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard.min.css">
 
@@ -21,12 +25,8 @@ color:#00ffd0;
 }
 
 #board{
-width:520px;
+width:500px;
 margin:20px auto;
-}
-
-#controls{
-margin-top:15px;
 }
 
 button{
@@ -35,7 +35,6 @@ font-size:16px;
 background:#00ffd0;
 border:none;
 cursor:pointer;
-margin-top:10px;
 }
 
 button:hover{
@@ -47,8 +46,8 @@ width:300px;
 }
 
 #difficultyValue{
-font-weight:bold;
 color:#00ffd0;
+font-weight:bold;
 }
 
 </style>
@@ -60,8 +59,6 @@ color:#00ffd0;
 
 <div id="board"></div>
 
-<div id="controls">
-
 <p>
 Difficulty:
 <input type="range" id="difficulty" min="1" max="20" value="10">
@@ -72,93 +69,96 @@ Difficulty:
 
 <p id="status"></p>
 
-</div>
-
+<!-- chess.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+
+<!-- chessboard.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard.min.js"></script>
 
 <script>
 
-/* GAME + ENGINE */
+/* GAME */
 
-const game = new Chess()
+var game = new Chess()
 
-const engine = new Worker("https://cdn.jsdelivr.net/npm/stockfish/stockfish.js")
+/* STOCKFISH */
 
-let difficultySlider = document.getElementById("difficulty")
-let difficultyValue = document.getElementById("difficultyValue")
-
-difficultySlider.oninput=function(){
-difficultyValue.innerText=this.value
-}
+var engine = new Worker("https://cdn.jsdelivr.net/npm/stockfish/stockfish.js")
 
 /* BOARD */
 
-let board = Chessboard("board",{
-draggable:true,
-position:"start",
-onDragStart:onDragStart,
-onDrop:onDrop,
-onSnapEnd:onSnapEnd
+var board = Chessboard('board', {
+draggable: true,
+position: 'start',
+onDragStart: onDragStart,
+onDrop: onDrop,
+onSnapEnd: onSnapEnd
 })
 
-/* DRAG RULE */
+/* DIFFICULTY SLIDER */
 
-function onDragStart(source,piece){
+var slider = document.getElementById("difficulty")
+var diffText = document.getElementById("difficultyValue")
 
-if(game.game_over()) return false
+slider.oninput=function(){
+diffText.innerText=this.value
+}
 
-if(piece.search(/^b/)!==-1) return false
+/* PREVENT MOVING BLACK */
+
+function onDragStart (source, piece) {
+
+if (game.game_over()) return false
+
+if (piece.search(/^b/) !== -1) return false
 
 }
 
 /* PLAYER MOVE */
 
-function onDrop(source,target){
+function onDrop (source, target) {
 
-let move = game.move({
-from:source,
-to:target,
-promotion:"q"
+var move = game.move({
+from: source,
+to: target,
+promotion: 'q'
 })
 
-if(move===null) return "snapback"
+if (move === null) return 'snapback'
 
 updateStatus()
 
-setTimeout(makeAIMove,200)
+setTimeout(makeAIMove,250)
 
 }
 
 /* SNAP */
 
-function onSnapEnd(){
-
+function onSnapEnd () {
 board.position(game.fen())
-
 }
 
 /* AI MOVE */
 
 function makeAIMove(){
 
-let depth = difficultySlider.value
+var depth = slider.value
 
 engine.postMessage("position fen " + game.fen())
 engine.postMessage("go depth " + depth)
 
-engine.onmessage=function(event){
+engine.onmessage = function(event){
 
-let line=event.data
+var line = event.data
 
 if(line.startsWith("bestmove")){
 
-let move=line.split(" ")[1]
+var move = line.split(" ")[1]
 
 game.move({
-from:move.substring(0,2),
-to:move.substring(2,4),
-promotion:"q"
+from: move.substring(0,2),
+to: move.substring(2,4),
+promotion: 'q'
 })
 
 board.position(game.fen())
@@ -175,7 +175,7 @@ updateStatus()
 
 function updateStatus(){
 
-let status=""
+var status=""
 
 if(game.in_checkmate()){
 status="Checkmate!"
@@ -204,9 +204,7 @@ document.getElementById("status").innerText=status
 function resetGame(){
 
 game.reset()
-
 board.start()
-
 updateStatus()
 
 }
